@@ -1,39 +1,52 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
+import { useAuthStore } from './store/authStore';
 import Login from './features/auth/Login';
 import ChangePassword from './features/auth/ChangePassword';
 import ProtectedRoute from './components/ProtectedRoute';
+import RoleRoute from './components/RoleRoute';
 import DashboardLayout from './layouts/DashboardLayout';
+import ProfileSettings from './features/profile/ProfileSettings';
+import EmployeeList from './features/employees/EmployeeList';
+import CreateEmployee from './features/employees/CreateEmployee';
+import EmployeePermissions from './features/employees/EmployeePermissions';
+import UnitList from './features/construction/catalogs/UnitList';
+import ResourceList from './features/construction/catalogs/ResourceList';
+import TemplateList from './features/construction/catalogs/TemplateList';
+import TemplateRecipeEditor from './features/construction/catalogs/TemplateRecipeEditor';
+import ProjectDashboard from './features/construction/projects/ProjectDashboard';
+import ProjectDetail from './features/construction/projects/ProjectDetail';
 
-// Temporary components for empty routes
+// Temporary components
 const Dashboard = () => (
-  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-left">
     <h2 className="text-2xl font-bold text-gray-800 mb-4">Bienvenido al Sistema</h2>
     <p className="text-gray-600">Este es el panel principal de IO GAMA Construcciones.</p>
   </div>
 );
 
-const Employees = () => (
-  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-    <h2 className="text-2xl font-bold text-gray-800 mb-4">Gestión de Empleados</h2>
-    <p className="text-gray-600">Próximamente: Listado y administración de personal.</p>
-  </div>
-);
-
-const Profile = () => (
-  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-    <h2 className="text-2xl font-bold text-gray-800 mb-4">Mi Perfil</h2>
-    <p className="text-gray-600">Configuración de cuenta y datos personales.</p>
-  </div>
-);
-
 function App() {
+  const { initialize, isInitializing } = useAuthStore();
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
+  if (isInitializing) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-gray-50 space-y-4">
+        <Loader2 className="h-12 w-12 text-blue-600 animate-spin" />
+        <p className="text-gray-500 font-bold animate-pulse text-sm">Iniciando IO GAMA...</p>
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Routes */}
         <Route path="/login" element={<Login />} />
 
-        {/* Private Routes (Wrapped in ProtectedRoute and Layout) */}
         <Route
           path="/"
           element={
@@ -43,12 +56,38 @@ function App() {
           }
         >
           <Route index element={<Dashboard />} />
-          <Route path="employees" element={<Employees />} />
-          <Route path="profile" element={<Profile />} />
+          
+          <Route path="employees">
+            <Route index element={
+              <RoleRoute allowedRoles={['Empresa', 'SuperAdminGlobal']}>
+                <EmployeeList />
+              </RoleRoute>
+            } />
+            <Route path="new" element={
+              <RoleRoute allowedRoles={['Empresa', 'SuperAdminGlobal']}>
+                <CreateEmployee />
+              </RoleRoute>
+            } />
+            <Route path=":id/permissions" element={
+              <RoleRoute allowedRoles={['Empresa', 'SuperAdminGlobal']}>
+                <EmployeePermissions />
+              </RoleRoute>
+            } />
+          </Route>
+
+          <Route path="construction">
+            <Route path="units" element={<UnitList />} />
+            <Route path="resources" element={<ResourceList />} />
+            <Route path="templates" element={<TemplateList />} />
+            <Route path="templates/:id/edit" element={<TemplateRecipeEditor />} />
+            <Route path="projects" element={<ProjectDashboard />} />
+            <Route path="projects/:id" element={<ProjectDetail />} />
+          </Route>
+
+          <Route path="profile" element={<ProfileSettings />} />
           <Route path="change-password" element={<ChangePassword />} />
         </Route>
 
-        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
