@@ -4,10 +4,32 @@ import type { ResourceDto, CreateResourceRequest, UpdateResourceRequest } from '
 const BASE_URL = '/api/construction/api/Resources';
 
 export const resourceService = {
-  getResources: async (pageNumber = 1, pageSize = 10): Promise<ResourceDto[]> => {
-    // Según el DTO compartido, el GET retorna un array [ { ... } ] directamente
+  // Obtener recursos con filtros de servidor
+  getResources: async (
+    pageNumber = 1, 
+    pageSize = 10, 
+    type?: string, 
+    onlyMyTenant = true // Cambiado a true por defecto
+  ): Promise<ResourceDto[]> => {
     const response = await api.get<ResourceDto[]>(BASE_URL, {
-      params: { pageNumber, pageSize }
+      params: { 
+        pageNumber, 
+        pageSize, 
+        type: type === 'Todos' ? undefined : type,
+        onlyMyTenant 
+      }
+    });
+    return response.data;
+  },
+
+  // Búsqueda parcial por servidor
+  searchResources: async (
+    searchTerm: string,
+    pageNumber = 1,
+    pageSize = 10
+  ): Promise<ResourceDto[]> => {
+    const response = await api.get<ResourceDto[]>(`${BASE_URL}/search`, {
+      params: { searchTerm, pageNumber, pageSize }
     });
     return response.data;
   },

@@ -17,14 +17,7 @@ import TemplateList from './features/construction/catalogs/TemplateList';
 import TemplateRecipeEditor from './features/construction/catalogs/TemplateRecipeEditor';
 import ProjectDashboard from './features/construction/projects/ProjectDashboard';
 import ProjectDetail from './features/construction/projects/ProjectDetail';
-
-// Temporary components
-const Dashboard = () => (
-  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-left">
-    <h2 className="text-2xl font-bold text-gray-800 mb-4">Bienvenido al Sistema</h2>
-    <p className="text-gray-600">Este es el panel principal de IO GAMA Construcciones.</p>
-  </div>
-);
+import MainDashboard from './features/dashboard/MainDashboard';
 
 function App() {
   const { initialize, isInitializing } = useAuthStore();
@@ -55,7 +48,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Dashboard />} />
+          <Route index element={<MainDashboard />} />
           
           <Route path="employees">
             <Route index element={

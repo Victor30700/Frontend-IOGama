@@ -85,7 +85,7 @@ const Sidebar: React.FC = () => {
               <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-200">
                 <Building2 className="h-6 w-6 text-white" />
               </div>
-              <span className="font-extrabold text-xl text-gray-900 tracking-tight">IO GAMA</span>
+              <span className="font-extrabold text-xl text-gray-900 tracking-tight">IO GAMA CONSTRUCCIONES</span>
             </div>
             <button 
               onClick={closeSidebar}

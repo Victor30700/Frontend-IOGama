@@ -1,5 +1,3 @@
-export type ResourceType = 'Materiales' | 'Mano de Obra' | 'Equipo';
-
 export interface ResourceDto {
   id: string;
   name: string;
@@ -7,7 +5,7 @@ export interface ResourceDto {
   unitAbbreviation: string;
   basePrice: number;
   code: string;
-  type: string;
+  type: 'Materiales' | 'Obreros' | 'Equipos';
   isGlobal: boolean;
 }
 
@@ -15,7 +13,7 @@ export interface CreateResourceRequest {
   name: string;
   unitOfMeasureId: string;
   basePrice: number;
-  type: string;
+  type: string; // Materiales, Obreros, Equipos
   code: string;
 }
 
@@ -25,11 +23,4 @@ export interface UpdateResourceRequest {
   unitOfMeasureId: string;
   basePrice: number;
   code: string;
-}
-
-export interface PaginatedResources {
-  items: ResourceDto[];
-  totalCount: number;
-  pageNumber: number;
-  pageSize: number;
 }

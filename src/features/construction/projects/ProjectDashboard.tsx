@@ -1,30 +1,38 @@
 import React, { useState } from 'react';
 import { 
-  Building2, 
   Plus, 
   Search, 
+  Building2, 
+  MoreVertical, 
+  Calendar, 
   MapPin, 
   User, 
-  Calendar, 
-  MoreVertical, 
-  ArrowRight,
-  Loader2,
+  TrendingUp, 
+  Filter,
+  Trash2,
+  Edit3,
+  CheckCircle2,
   AlertCircle,
-  TrendingUp,
-  Layout
+  LayoutGrid,
+  List,
+  Loader2
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useProjectsQuery } from '../../../hooks/queries/construction/useProjects';
-import ProjectForm from './ProjectForm';
+import { useProjectsQuery, useDeleteProjectMutation, useUpdateProjectMutation } from '../../../hooks/queries/construction/useProjects';
 import { ProjectStatus } from '../../../types/construction/project';
 import type { ProjectDto } from '../../../types/construction/project';
+import ProjectForm from './ProjectForm';
+import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 const ProjectDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<ProjectDto | undefined>();
+  const [searchTerm, setSearchTerm] = useState('');
   
   const { data: projects, isLoading } = useProjectsQuery();
+  const { mutate: deleteProject } = useDeleteProjectMutation();
+  const { mutate: updateProject } = useUpdateProjectMutation();
 
   const filteredProjects = projects?.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -32,166 +40,168 @@ const ProjectDashboard: React.FC = () => {
     p.client.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getStatusStyle = (status: ProjectStatus) => {
-    switch (status) {
-      case ProjectStatus.Draft: return 'bg-gray-100 text-gray-600 border-gray-200';
-      case ProjectStatus.Active: return 'bg-green-100 text-green-700 border-green-200';
-      case ProjectStatus.OnHold: return 'bg-amber-100 text-amber-700 border-amber-200';
-      case ProjectStatus.Completed: return 'bg-blue-100 text-blue-700 border-blue-200';
-      default: return 'bg-gray-50 text-gray-500 border-gray-100';
-    }
+  const handleDelete = (id: string, name: string) => {
+    Swal.fire({
+      title: '¿Eliminar Proyecto?',
+      text: `Se borrará "${name}" permanentemente junto con todo su presupuesto.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#9ca3af',
+      confirmButtonText: 'Sí, eliminar obra',
+      cancelButtonText: 'Cancelar',
+      customClass: { popup: 'rounded-3xl' }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteProject(id);
+      }
+    });
   };
 
-  const getStatusLabel = (status: ProjectStatus) => {
-    switch (status) {
-      case ProjectStatus.Draft: return 'Borrador';
-      case ProjectStatus.Active: return 'En Ejecución';
-      case ProjectStatus.OnHold: return 'En Pausa';
-      case ProjectStatus.Completed: return 'Finalizado';
-      default: return 'Desconocido';
-    }
+  const handleChangeStatus = (project: ProjectDto, newStatus: ProjectStatus) => {
+    updateProject({ id: project.id, data: { ...project, status: newStatus } });
   };
 
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 text-left">
         <Loader2 className="h-10 w-10 text-blue-600 animate-spin" />
-        <p className="text-gray-500 font-medium">Cargando portafolio de obras...</p>
+        <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Cargando portafolio...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 text-left">
+    <div className="space-y-8 animate-in fade-in duration-700 text-left">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-left">
-        <div className="flex items-center gap-4 text-left">
-          <div className="bg-blue-50 p-3 rounded-xl">
-            <Building2 className="h-6 w-6 text-blue-600" />
-          </div>
-          <div className="text-left">
-            <h2 className="text-xl font-bold text-gray-900">Portafolio de Obras</h2>
-            <p className="text-sm text-gray-500">Administra los presupuestos y el avance de tus proyectos.</p>
-          </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 text-left">
+        <div className="text-left">
+          <h2 className="text-3xl font-black text-gray-900 tracking-tight text-left">Portafolio de Obras</h2>
+          <p className="text-gray-500 font-medium text-left">Gestiona y supervisa todos los proyectos de IO GAMA.</p>
         </div>
         <button 
-          onClick={() => setIsFormOpen(true)}
-          className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
+          onClick={() => { setEditingProject(undefined); setIsFormOpen(true); }}
+          className="flex items-center gap-2 px-8 py-3.5 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100"
         >
-          <Plus className="h-4 w-4" />
-          Nueva Obra
+          <Plus className="h-5 w-5" /> Nueva Obra
         </button>
       </div>
 
-      {/* Search and Quick Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-left">
-        <div className="lg:col-span-8 relative text-left">
-          <Search className="absolute left-4 top-3.5 h-4 w-4 text-gray-400" />
+      {/* Barra de Herramientas */}
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between text-left">
+        <div className="relative w-full md:w-96 text-left">
+          <Search className="absolute left-4 top-3.5 h-5 w-5 text-gray-400 text-left" />
           <input 
-            type="text" 
-            placeholder="Buscar por nombre, cliente o código de proyecto..."
+            type="text"
+            placeholder="Buscar por nombre, código o cliente..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all text-sm bg-white outline-none"
+            className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-100 bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm font-medium"
           />
         </div>
-        <div className="lg:col-span-4 flex items-center gap-4 text-left">
-          <div className="flex-1 bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center gap-3">
-            <div className="p-2 bg-green-50 rounded-lg text-green-600">
-              <TrendingUp className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase leading-none">Total Obras</p>
-              <p className="text-lg font-black text-gray-900 leading-none mt-1">{projects?.length || 0}</p>
-            </div>
-          </div>
-          <div className="flex-1 bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center gap-3">
-            <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-              <Layout className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase leading-none">En Curso</p>
-              <p className="text-lg font-black text-gray-900 leading-none mt-1">
-                {projects?.filter(p => p.status === ProjectStatus.Active).length || 0}
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-gray-100 text-left">
+          <button className="p-2.5 bg-gray-50 text-blue-600 rounded-xl shadow-sm"><LayoutGrid className="h-5 w-5 text-left" /></button>
+          <button className="p-2.5 text-gray-400 hover:bg-gray-50 rounded-xl transition-all"><List className="h-5 w-5 text-left" /></button>
         </div>
       </div>
 
-      {/* Project Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
-        {filteredProjects?.length === 0 ? (
-          <div className="col-span-full py-20 bg-white rounded-2xl border border-dashed border-gray-200 text-center text-gray-400">
-            <div className="flex flex-col items-center gap-3">
-              <Building2 className="h-12 w-12 opacity-10" />
-              <p>No se encontraron proyectos activos.</p>
+      {/* Grid de Proyectos */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-left text-left">
+        {filteredProjects?.map((project) => (
+          <div 
+            key={project.id} 
+            className="bg-white rounded-[40px] border border-gray-100 shadow-sm hover:shadow-2xl transition-all group relative overflow-hidden flex flex-col h-full text-left"
+          >
+            {/* Status Badge */}
+            <div className="absolute top-6 left-6 z-10 text-left text-left">
+              <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                project.status === ProjectStatus.Active ? 'bg-green-50 text-green-700 border-green-100' :
+                project.status === ProjectStatus.Draft ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                'bg-gray-50 text-gray-700 border-gray-100'
+              } text-left text-left`}>
+                {project.status === ProjectStatus.Active ? 'En Ejecución' : project.status}
+              </span>
             </div>
-          </div>
-        ) : (
-          filteredProjects?.map((project) => (
-            <div key={project.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group overflow-hidden flex flex-col text-left">
-              {/* Card Header */}
-              <div className="p-6 flex-1 text-left">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex flex-col min-w-0 pr-2">
-                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">{project.code}</span>
-                    <h3 className="font-bold text-gray-900 text-lg leading-tight truncate" title={project.name}>{project.name}</h3>
-                  </div>
-                  <span className={`px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase shrink-0 ${getStatusStyle(project.status)}`}>
-                    {getStatusLabel(project.status)}
-                  </span>
-                </div>
 
-                <div className="space-y-3 mb-6 text-left">
-                  <div className="flex items-center gap-2 text-gray-500 text-left">
-                    <User className="h-4 w-4 text-gray-400" />
-                    <span className="text-xs font-medium truncate">Cliente: {project.client}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-500 text-left">
-                    <MapPin className="h-4 w-4 text-gray-400" />
-                    <span className="text-xs font-medium truncate">{project.location}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-500 text-left">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <span className="text-xs font-medium">Registrado: {new Date(project.createdAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
-
-                {/* Quick Info Bar */}
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl text-left">
-                  <div className="flex flex-col">
-                    <span className="text-[9px] font-bold text-gray-400 uppercase">Tasa de Cambio</span>
-                    <span className="text-xs font-bold text-gray-700">1 USD = {project.exchangeRate} Bs.</span>
-                  </div>
-                  <button className="p-1.5 text-gray-400 hover:text-gray-900 transition-colors">
-                    <MoreVertical className="h-4 w-4" />
+            {/* Menu de Acciones */}
+            <div className="absolute top-6 right-6 z-10 group/menu text-left text-left">
+              <button className="p-2 bg-white/80 backdrop-blur-md rounded-xl text-gray-400 hover:text-gray-900 shadow-sm border border-gray-50 text-left">
+                <MoreVertical className="h-5 w-5 text-left" />
+              </button>
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 hidden group-hover/menu:block animate-in fade-in slide-in-from-top-2 duration-200 text-left text-left">
+                <button 
+                  onClick={() => { setEditingProject(project); setIsFormOpen(true); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors text-left"
+                >
+                  <Edit3 className="h-4 w-4 text-left" /> Editar Información
+                </button>
+                {project.status === ProjectStatus.Draft && (
+                  <button 
+                    onClick={() => handleChangeStatus(project, ProjectStatus.Active)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-green-600 hover:bg-green-50 transition-colors text-left"
+                  >
+                    <CheckCircle2 className="h-4 w-4 text-left text-left" /> Iniciar Obra
                   </button>
+                )}
+                <hr className="my-1 border-gray-50 text-left" />
+                <button 
+                  onClick={() => handleDelete(project.id, project.name)}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors text-left"
+                >
+                  <Trash2 className="h-4 w-4 text-left" /> Eliminar Proyecto
+                </button>
+              </div>
+            </div>
+
+            {/* Card Content */}
+            <div className="p-8 pt-20 flex-1 flex flex-col text-left text-left text-left">
+              <div className="mb-6 text-left">
+                <div className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-1 text-left">Código: {project.code}</div>
+                <h3 className="text-xl font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors text-left">{project.name}</h3>
+              </div>
+
+              <div className="space-y-4 mb-8 text-left text-left">
+                <div className="flex items-center gap-3 text-gray-500 text-left text-left text-left">
+                  <div className="h-8 w-8 rounded-lg bg-gray-50 flex items-center justify-center text-left text-left">
+                    <User className="h-4 w-4 text-left text-left" />
+                  </div>
+                  <div className="text-left text-left">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase leading-none text-left">Cliente</p>
+                    <p className="text-xs font-bold text-gray-700 text-left">{project.client}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-gray-500 text-left text-left text-left text-left">
+                  <div className="h-8 w-8 rounded-lg bg-gray-50 flex items-center justify-center text-left text-left">
+                    <MapPin className="h-4 w-4 text-left text-left" />
+                  </div>
+                  <div className="text-left text-left text-left">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase leading-none text-left">Ubicación</p>
+                    <p className="text-xs font-bold text-gray-700 text-left">{project.location}</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Card Footer */}
-              <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-50 flex items-center justify-between text-left">
+              <div className="mt-auto pt-6 border-t border-gray-50 flex items-center justify-between text-left">
+                <div className="text-left text-left text-left">
+                  <p className="text-[10px] font-black text-gray-400 uppercase text-left">Presupuesto</p>
+                  <p className="text-lg font-black text-gray-900 text-left">Bs. 0.00</p>
+                </div>
                 <button 
                   onClick={() => navigate(`/construction/projects/${project.id}`)}
-                  className="flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-700 transition-all group/btn"
+                  className="px-6 py-2.5 bg-gray-900 text-white text-xs font-black rounded-xl hover:bg-blue-600 transition-all shadow-lg text-left"
                 >
-                  Ver Presupuesto 
-                  <ArrowRight className="h-3 w-3 group-hover/btn:translate-x-1 transition-transform" />
+                  Abrir Gestión
                 </button>
-                <div className="flex items-center -space-x-2 text-left">
-                  <div className="h-7 w-7 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-blue-600">JS</div>
-                  <div className="h-7 w-7 rounded-full bg-green-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-green-600">VS</div>
-                </div>
               </div>
             </div>
-          ))
-        )}
+          </div>
+        ))}
       </div>
 
       {isFormOpen && (
         <ProjectForm 
-          onClose={() => setIsFormOpen(false)} 
+          project={editingProject}
+          onClose={() => { setIsFormOpen(false); setEditingProject(undefined); }} 
         />
       )}
     </div>

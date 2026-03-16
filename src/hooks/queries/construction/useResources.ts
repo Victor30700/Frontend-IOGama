@@ -1,17 +1,30 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourceService } from '../../../services/construction/resource.service';
-import { sileo } from 'sileo';
+import Swal from 'sweetalert2';
 import type { CreateResourceRequest, UpdateResourceRequest } from '../../../types/construction/resource';
 
 export const resourceKeys = {
   all: ['resources'] as const,
-  list: (page: number, size: number) => [...resourceKeys.all, 'list', page, size] as const,
+  list: (page: number, size: number, type?: string, onlyMyTenant?: boolean) => 
+    [...resourceKeys.all, 'list', { page, size, type, onlyMyTenant }] as const,
+  search: (term: string, page: number, size: number) => 
+    [...resourceKeys.all, 'search', { term, page, size }] as const,
 };
 
-export const useResourcesQuery = (pageNumber = 1, pageSize = 10) => {
+export const useResourcesQuery = (pageNumber = 1, pageSize = 10, type?: string, onlyMyTenant = false) => {
   return useQuery({
-    queryKey: resourceKeys.list(pageNumber, pageSize),
-    queryFn: () => resourceService.getResources(pageNumber, pageSize),
+    queryKey: resourceKeys.list(pageNumber, pageSize, type, onlyMyTenant),
+    queryFn: () => resourceService.getResources(pageNumber, pageSize, type, onlyMyTenant),
+    placeholderData: (previousData) => previousData,
+  });
+};
+
+export const useSearchResourcesQuery = (searchTerm: string, pageNumber = 1, pageSize = 10) => {
+  return useQuery({
+    queryKey: resourceKeys.search(searchTerm, pageNumber, pageSize),
+    queryFn: () => resourceService.searchResources(searchTerm, pageNumber, pageSize),
+    enabled: searchTerm.length > 2,
+    placeholderData: (previousData) => previousData,
   });
 };
 
@@ -22,15 +35,25 @@ export const useCreateResourceMutation = () => {
     mutationFn: (data: CreateResourceRequest) => resourceService.createResource(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: resourceKeys.all });
-      sileo.success({
-        title: 'Recurso Creado',
-        description: 'El insumo ha sido registrado en el catálogo.'
+      Swal.fire({
+        title: '¡Recurso Creado!',
+        text: 'El nuevo insumo ha sido añadido al catálogo maestro.',
+        icon: 'success',
+        confirmButtonColor: '#2563eb',
+        customClass: { popup: 'rounded-2xl' }
       });
     },
     onError: (error: any) => {
-      sileo.error({
-        title: 'Error al crear',
-        description: error.response?.data?.message || 'No se pudo registrar el recurso.'
+      const serverErrors = error.response?.data?.errors;
+      let msg = 'No se pudo crear el recurso.';
+      if (serverErrors) msg = Object.values(serverErrors).flat().join('<br/>');
+      
+      Swal.fire({ 
+        title: 'Error de Registro', 
+        html: `<div class="text-left text-sm text-red-600">${msg}</div>`, 
+        icon: 'error',
+        confirmButtonColor: '#ef4444',
+        customClass: { popup: 'rounded-2xl' }
       });
     }
   });
@@ -44,15 +67,21 @@ export const useUpdateResourceMutation = () => {
       resourceService.updateResource(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: resourceKeys.all });
-      sileo.success({
-        title: 'Recurso Actualizado',
-        description: 'Los cambios han sido guardados correctamente.'
+      Swal.fire({
+        title: '¡Actualizado!',
+        text: 'Los cambios del insumo se han guardado correctamente.',
+        icon: 'success',
+        confirmButtonColor: '#2563eb',
+        customClass: { popup: 'rounded-2xl' }
       });
     },
     onError: (error: any) => {
-      sileo.error({
+      Swal.fire({
         title: 'Error al actualizar',
-        description: error.response?.data?.message || 'No se pudo actualizar el recurso.'
+        text: error.response?.data?.message || 'No se pudieron guardar los cambios.',
+        icon: 'error',
+        confirmButtonColor: '#ef4444',
+        customClass: { popup: 'rounded-2xl' }
       });
     }
   });
@@ -65,15 +94,21 @@ export const useDeleteResourceMutation = () => {
     mutationFn: (id: string) => resourceService.deleteResource(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: resourceKeys.all });
-      sileo.success({
-        title: 'Recurso Eliminado',
-        description: 'El insumo ha sido removido del catálogo.'
+      Swal.fire({
+        title: 'Eliminado',
+        text: 'El recurso ha sido removido del catálogo maestro.',
+        icon: 'success',
+        confirmButtonColor: '#2563eb',
+        customClass: { popup: 'rounded-2xl' }
       });
     },
     onError: (error: any) => {
-      sileo.error({
+      Swal.fire({
         title: 'Error al eliminar',
-        description: error.response?.data?.message || 'No se pudo eliminar el recurso.'
+        text: error.response?.data?.message || 'No se pudo procesar la eliminación.',
+        icon: 'error',
+        confirmButtonColor: '#ef4444',
+        customClass: { popup: 'rounded-2xl' }
       });
     }
   });

@@ -1,9 +1,11 @@
 export interface AnalysisResourceDto {
+  resourceId: string;
   name: string;
   unit: string;
   performance: number;
   unitPrice: number;
   total: number;
+  type: string;
 }
 
 export interface BudgetItemAnalysisDto {
@@ -26,15 +28,24 @@ export interface BudgetItemAnalysisDto {
   finalUnitPrice: number;
 }
 
-export interface UpdateItemResourceRequest {
-  performance: number;
-  unitPrice: number;
-}
-
+// DTO para POST /api/items/{id}/resources/custom
 export interface AddCustomResourceRequest {
+  budgetItemId: string;
   name: string;
   unitOfMeasureId: string;
   unitPrice: number;
   performance: number;
-  type: number; // 0=Mat, 1=Obrero, 2=Eq
+  quantity: number;
+  type: string; // "Materiales", "Obreros", "Equipos"
+}
+
+// DTO para PUT /api/items/{id}/resources/{resourceId}
+export interface UpdateItemResourceRequest {
+  id: string; // resourceId
+  name: string;
+  unitOfMeasureId: string;
+  unitPrice: number;
+  performance: number;
+  quantity: number;
+  type: string;
 }

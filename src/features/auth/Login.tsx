@@ -2,38 +2,50 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useNavigate } from 'react-router-dom';
-import { LogIn, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
-import { sileo } from 'sileo';
-import api from '../../config/api';
+import { 
+  Mail, 
+  Lock, 
+  Loader2, 
+  ArrowRight
+} from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import type { AuthResponse, LoginCredentials } from '../../types/auth';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
+import { useQueryClient } from '@tanstack/react-query';
 
 const loginSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(1, 'La contraseña es requerida'),
+  email: z.string().email('Introduce un correo electrónico válido'),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
 });
 
+type LoginFormValues = z.infer<typeof loginSchema>;
+
 const Login: React.FC = () => {
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
   const setTokens = useAuthStore((state) => state.setTokens);
   const setUserData = useAuthStore((state) => state.setUserData);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginCredentials>({
+  } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginCredentials) => {
+  const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
-    setError(null);
+    queryClient.clear();
+
     try {
-      const response = await api.post<AuthResponse>('/api/users/Auth/login', data);
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_GATEWAY_URL}/api/users/Auth/login`,
+        data
+      );
+
       const { token, refreshToken, userId, userContext } = response.data;
 
       setTokens(token, refreshToken);
@@ -46,112 +58,109 @@ const Login: React.FC = () => {
         fotoUrl: userContext.profile.fotoUrl,
       });
 
-      sileo.success({
-        title: '¡Bienvenido!',
-        description: `Hola de nuevo, ${userContext.profile.name}`
-      });
-
       navigate('/');
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Credenciales inválidas o error de conexión';
-      setError(errorMessage);
-      
-      // Mostrar alerta de Sileo
-      sileo.error({
-        title: 'Error de Autenticación',
-        description: errorMessage
-      });
-
-      console.error('Login Error:', err);
+    } catch (error: any) {
+      const status = error.response?.status;
+      if (status === 401) {
+        Swal.fire({ 
+          title: 'Acceso Denegado', 
+          text: 'Credenciales no válidas', 
+          icon: 'error', 
+          confirmButtonColor: '#0f172a',
+          customClass: { popup: 'rounded-2xl' }
+        });
+      } else {
+        Swal.fire({ 
+          title: 'Error de Sistema', 
+          text: 'Servidor fuera de línea', 
+          icon: 'question', 
+          confirmButtonColor: '#0f172a',
+          customClass: { popup: 'rounded-2xl' }
+        });
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg">
-        <div>
-          <div className="flex justify-center">
-            <div className="p-3 bg-blue-100 rounded-full">
-              <LogIn className="h-10 w-10 text-blue-600" />
+    <div className="min-h-screen w-screen bg-[#0f172a] flex items-center justify-center p-6 text-left selection:bg-blue-500/20">
+      <div className="w-full max-w-[620px] animate-in fade-in duration-800">
+        
+        <div className="bg-white p-10 md:p-12 rounded-[32px] shadow-2xl border border-white/5 text-left">
+          
+          {/* Header Corporativo */}
+          <div className="mb-12 text-left">
+            <div className="flex items-center gap-4 mb-8">
+              <img src="/img/icono.png" alt="Logo" className="h-12 w-12" />
+              <div className="h-8 w-[1px] bg-slate-200"></div>
+              <div>
+                <h1 className="text-xl font-black text-slate-900 tracking-tighter leading-tight">
+                  IO GAMA <span className="text-blue-600 block text-xs tracking-[0.4em] font-black uppercase mt-0.5">CONSTRUCCIONES</span>
+                </h1>
+              </div>
+            </div>
+            
+            <div className="space-y-1">
+              <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Acceso al Sistema</h2>
+              <p className="text-sm text-slate-500 font-medium">Ingresa tus credenciales para acceder al panel de control</p>
             </div>
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            IO GAMA Construcciones
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Inicia sesión para acceder al sistema
-          </p>
-        </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          {error && (
-            <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-red-400" />
-              <span className="text-sm text-red-700">{error}</span>
-            </div>
-          )}
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Correo Electrónico
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 text-left">
+            <div className="space-y-2 text-left">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Identidad Corporativa</label>
+              <div className="relative group text-left">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-blue-600 transition-colors" />
                 <input
                   {...register('email')}
                   type="email"
-                  className={`block w-full pl-10 pr-3 py-2 border rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                    errors.email ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="ejemplo@gama.com"
+                  className={`w-full pl-11 pr-4 py-3.5 bg-slate-50 border ${errors.email ? 'border-red-200' : 'border-slate-100'} rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-slate-700 text-sm`}
+                  placeholder="usuario@gama.com"
                 />
               </div>
-              {errors.email && (
-                <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
-              )}
+              {errors.email && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.email.message}</p>}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Contraseña
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
+            <div className="space-y-2 text-left">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">Clave de Acceso</label>
+              <div className="relative group text-left">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-blue-600 transition-colors" />
                 <input
                   {...register('password')}
                   type="password"
-                  className={`block w-full pl-10 pr-3 py-2 border rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                    errors.password ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  className={`w-full pl-11 pr-4 py-3.5 bg-slate-50 border ${errors.password ? 'border-red-200' : 'border-slate-100'} rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-slate-700 text-sm`}
                   placeholder="••••••••"
                 />
               </div>
-              {errors.password && (
-                <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
-              )}
+              {errors.password && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.password.message}</p>}
             </div>
-          </div>
 
-          <div>
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-[#0f172a] hover:bg-blue-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-slate-200 transition-all flex items-center justify-center gap-3 group active:scale-[0.98] disabled:opacity-50 text-left"
             >
               {isLoading ? (
-                <Loader2 className="animate-spin h-5 w-5 mr-2" />
-              ) : null}
-              {isLoading ? 'Ingresando...' : 'Iniciar Sesión'}
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <>
+                  Ingresar al Panel
+                  <ArrowRight className="h-4 w-4 opacity-50 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
+                </>
+              )}
             </button>
+          </form>
+          
+          <div className="mt-12 pt-8 border-t border-slate-50 flex items-center justify-between">
+            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">© 2026 IO GAMA</p>
+            <div className="flex gap-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-blue-600"></div>
+              <div className="h-1.5 w-1.5 rounded-full bg-slate-200"></div>
+              <div className="h-1.5 w-1.5 rounded-full bg-slate-200"></div>
+            </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

@@ -31,6 +31,11 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Añadimos el ID del Tenant (Empresa) para que el microservicio sepa qué datos mostrar
+    config.headers['X-Tenant-ID'] = import.meta.env.VITE_TENANT_ID;
+    config.headers['tenant-id'] = import.meta.env.VITE_TENANT_ID;
+    
     return config;
   },
   (error) => {

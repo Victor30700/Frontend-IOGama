@@ -1,9 +1,19 @@
+export interface GatekeeperPermission {
+  acceso: boolean;
+  funcionalidades: string[];
+  recursosIds: string[];
+}
+
+export interface GatekeeperPermissionsMap {
+  [modulo: string]: GatekeeperPermission;
+}
+
+// Estructura para Construction.API
 export interface PermissionDetail {
   access: boolean;
   permissions: string[];
 }
 
-// Representa el diccionario: { "Modulo": { access: true, permissions: ["*"] } }
 export interface UserPermissions {
   [key: string]: PermissionDetail;
 }
@@ -18,6 +28,13 @@ export interface EmployeeListItem {
   fechaRegistro: string;
 }
 
+export interface EmployeeDetailDto extends EmployeeListItem {
+  ci: string;
+  celular: string;
+  direccion: string;
+  permisos: GatekeeperPermissionsMap;
+}
+
 export interface CreateEmployeeRequest {
   email: string;
   passwordTemporal: string;
@@ -30,5 +47,20 @@ export interface CreateEmployeeRequest {
   celular: string;
   areaTrabajo: string;
   esSuperAdmin: boolean;
-  permisos: UserPermissions;
+  permisos: GatekeeperPermissionsMap;
+}
+
+export interface UpdateGatekeeperPermissionsRequest {
+  areaTrabajo: string;
+  esSuperAdmin: boolean;
+  permisos: GatekeeperPermissionsMap;
+}
+
+export interface UpdateEmployeeProfileRequest {
+  nombres: string;
+  apellidoPaterno: string;
+  apellidoMaterno: string;
+  ci: string;
+  celular: string;
+  direccion: string;
 }

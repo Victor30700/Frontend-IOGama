@@ -23,23 +23,24 @@ export const itemService = {
     await api.delete(`${BASE_URL}/items/${id}`);
   },
 
-  // Gestión de Análisis de Precios Unitarios (APU)
+  // --- Gestión de Análisis de Precios Unitarios (APU) ---
+  
   getItemAnalysis: async (id: string): Promise<BudgetItemAnalysisDto> => {
     const response = await api.get<BudgetItemAnalysisDto>(`${BASE_URL}/items/${id}/analysis`);
     return response.data;
   },
 
-  // Añadir recurso manual (no del catálogo)
-  addCustomResource: async (id: string, data: AddCustomResourceRequest): Promise<void> => {
-    await api.post(`${BASE_URL}/items/${id}/resources/custom`, data);
+  // Añadir recurso manual (POST /api/items/{id}/resources/custom)
+  addCustomResource: async (itemId: string, data: AddCustomResourceRequest): Promise<void> => {
+    await api.post(`${BASE_URL}/items/${itemId}/resources/custom`, data);
   },
 
-  // Actualizar rendimiento o precio de un recurso específico en el APU
+  // Actualizar recurso en el APU (PUT /api/items/{id}/resources/{resourceId})
   updateItemResource: async (itemId: string, resourceId: string, data: UpdateItemResourceRequest): Promise<void> => {
     await api.put(`${BASE_URL}/items/${itemId}/resources/${resourceId}`, data);
   },
 
-  // Quitar un recurso del APU
+  // Eliminar recurso del APU (DELETE /api/items/{id}/resources/{resourceId})
   removeItemResource: async (itemId: string, resourceId: string): Promise<void> => {
     await api.delete(`${BASE_URL}/items/${itemId}/resources/${resourceId}`);
   }

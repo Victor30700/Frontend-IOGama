@@ -46,6 +46,21 @@ export const useUpdateItemMutation = (moduleId: string, projectId: string) => {
   });
 };
 
+export const useAddCustomResourceMutation = (itemId: string, moduleId: string, projectId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: AddCustomResourceRequest) => 
+      itemService.addCustomResource(itemId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: itemKeys.analysis(itemId) });
+      queryClient.invalidateQueries({ queryKey: itemKeys.list(moduleId) });
+      queryClient.invalidateQueries({ queryKey: ['projectModules', 'list', projectId] });
+      sileo.success({ title: 'Recurso añadido' });
+    }
+  });
+};
+
 export const useUpdateItemResourceMutation = (itemId: string, moduleId: string, projectId: string) => {
   const queryClient = useQueryClient();
 
@@ -57,6 +72,21 @@ export const useUpdateItemResourceMutation = (itemId: string, moduleId: string, 
       queryClient.invalidateQueries({ queryKey: itemKeys.list(moduleId) });
       queryClient.invalidateQueries({ queryKey: ['projectModules', 'list', projectId] });
       sileo.success({ title: 'Análisis actualizado' });
+    }
+  });
+};
+
+export const useDeleteItemResourceMutation = (itemId: string, moduleId: string, projectId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (resourceId: string) => 
+      itemService.removeItemResource(itemId, resourceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: itemKeys.analysis(itemId) });
+      queryClient.invalidateQueries({ queryKey: itemKeys.list(moduleId) });
+      queryClient.invalidateQueries({ queryKey: ['projectModules', 'list', projectId] });
+      sileo.success({ title: 'Recurso eliminado' });
     }
   });
 };

@@ -5,7 +5,7 @@ import Navbar from './Navbar';
 
 const DashboardLayout: React.FC = () => {
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
+    <div className="flex h-screen bg-slate-100 overflow-hidden font-sans">
       {/* Sidebar - Fixed/Responsive */}
       <Sidebar />
 

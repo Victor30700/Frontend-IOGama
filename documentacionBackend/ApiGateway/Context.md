@@ -12,64 +12,86 @@ El Gateway es el **Portero** del sistema. Antes de que una petición llegue a un
 2. Si el Token es inválido o no existe (en rutas protegidas), el Gateway responde inmediatamente con `401 Unauthorized`.
 3. Esto descarga a los microservicios de la tarea de validación de firma y asegura que solo tráfico auténtico circule por la red interna.
 
-### 🔄 Enrutamiento Dual (Clean & Swagger Style)
-Hemos implementado un sistema de transformación de rutas para mayor flexibilidad:
-- **Clean Routes:** Permite URLs elegantes como `/api/users/Auth/login`.
-- **Swagger Style:** Soporta el formato por defecto de los microservicios `/api/users/api/...` para total compatibilidad con la UI de Swagger.
+### 🔄 Enrutamiento y Case Sensitivity
+**Importante:** El Gateway es sensible a mayúsculas/minúsculas en las rutas de los microservicios.
+- Las rutas de proyectos deben usar `/api/construction/api/Projects` (P mayúscula) para asegurar el enrutamiento correcto hacia el microservicio de Construcción.
+- Las rutas de gestión de empresas deben usar `/api/users/api/CompanyManagement` para UserManagement.
 
 ---
 
-## 2. Guía de Integración para React (Vite)
+## 2. Flujo de Autenticación y Sesión
 
-Para conectar el Frontend de React con el ecosistema, sigue estas pautas:
+### Inicio de Sesión y Aislamiento de Datos
+El proceso de autenticación garantiza que no haya fuga de información entre sesiones:
+1. Al iniciar sesión, el sistema ejecuta un `queryClient.clear()` para borrar cualquier caché de usuarios anteriores.
+2. Se obtienen los tokens y el contexto del usuario.
+3. El sistema proporciona retroalimentación detallada mediante **SweetAlert2** (Credenciales incorrectas, cuenta suspendida, éxito).
 
-### Configuración de Base URL
-En tu archivo `.env` o de configuración de Axios:
+### Mantenimiento de Sesión (Silent Refresh)
+Al recargar la aplicación, el sistema utiliza el `refreshToken` para obtener un nuevo `accessToken` automáticamente, garantizando una experiencia fluida sin re-autenticación constante.
+
+---
+
+## 3. Modelo de Seguridad en Dos Capas
+
+### Capa 1: El Portero (UserManagement)
+Gestiona el acceso de "alto nivel" y la integridad del personal:
+- **Estados de Cuenta:** 
+  - `1`: Activo (Acceso total).
+  - `2`: Suspendido (Bloqueo inmediato de login).
+- **Gestión de Perfil:** Permite a los usuarios actualizar su imagen (Base64), biografía corporativa y datos de contacto oficiales.
+- **Reset de Seguridad:** Los administradores pueden forzar el reseteo de contraseñas de empleados.
+
+### Capa 2: Matriz Granular (Construcción)
+Define qué funciones técnicas puede realizar el usuario dentro del módulo de ingeniería:
+- Gestión de catálogos (Unidades, Recursos, Plantillas APU).
+- Ingeniería de costos y presupuestos masivos.
+- **Reportes Oficiales:** Generación de Formularios B-1 (Presupuesto) y B-3 (Insumos Consolidados) mediante el motor **QuestPDF**.
+
+---
+
+## 4. Colaboración en Proyectos (Batch Maestro v4)
+
+El sistema soporta gestión de equipos a gran escala:
+
+- **Invitación Masiva (Batch):** Permite añadir múltiples empleados a una obra en una sola petición HTTP mediante el endpoint `POST /members` con un array de objetos.
+- **Roles de Ingeniería:**
+  - `Admin`: Control total del presupuesto y equipo.
+  - `Resident`: Gestión técnica de la obra.
+  - `Supervisor`: Supervisión y visor de costos.
+  - `Viewer`: Solo lectura.
+- **Filtro Automático de Portafolio:** El microservicio filtra los proyectos automáticamente para que los empleados solo vean las obras donde son miembros activos.
+- **Traspaso de Liderazgo:** El Dueño o SuperAdmin pueden transferir el rol de **Encargado** a cualquier miembro, delegando el control total de la obra.
+
+---
+
+## 5. Interfaz y Experiencia de Usuario (UX)
+
+### Diseño Profesional Minimalista
+- **Estética Industrial:** Fondo en `slate-100` con tarjetas blancas de bordes ultra-suaves (`40px`) para reducir la fatiga visual.
+- **Dashboard Gerencial:** Panel principal con métricas agregadas (Proyectos activos, inversión total, personal en nómina).
+- **Menús de Acción Estables:** Implementación de menús contextuales basados en clics y estados para evitar la inestabilidad del hover.
+- **Sincronización de Identidad:** La foto de perfil se sincroniza en tiempo real entre la configuración y el Navbar global.
+
+---
+
+## 6. Guía de Integración para React (Vite)
+
+### Cliente Axios con Soporte para Blobs (PDFs)
 ```javascript
-// .env
-VITE_API_GATEWAY_URL=https://localhost:7149
+// Ejemplo para descargar reportes oficiales
+export const downloadPdf = async (projectId) => {
+  const response = await api.get(`/api/Reports/projects/${projectId}/budget/pdf`, {
+    responseType: 'blob' // Vital para recibir el archivo binario
+  });
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  // ... lógica de descarga
+};
 ```
 
-### Ejemplo de Cliente Axios (Recomendado)
-```javascript
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_GATEWAY_URL,
-});
-
-// Interceptor para añadir el Token automáticamente
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Ejemplo de Llamada a UserManagement (Login)
-export const login = async (credentials) => {
-  // Nota: Usamos la ruta limpia /api/users/Auth/login
-  const response = await api.post('/api/users/Auth/login', credentials);
-  return response.data;
-};
-
-// Ejemplo de Llamada a Construction (Obtener Proyectos)
-export const getProjects = async () => {
-  const response = await api.get('/api/construction/Projects');
-  return response.data;
-};
-```
-
 ---
 
-## 3. Swagger Unificado
-El Gateway reescribe dinámicamente el JSON de Swagger de cada microservicio para inyectar el prefijo correcto.
-- **Acceso:** `https://localhost:7149/swagger`
-- **Uso:** Selecciona el microservicio en el menú desplegable superior derecho. El botón "Execute" funcionará directamente a través de la pasarela.
-
----
-
-## 4. Troubleshooting Local
-1. **SSL:** Asegúrate de que tu navegador/cliente acepte el certificado de desarrollo de ASP.NET Core.
-2. **Puertos:** El Gateway corre en `7149` (HTTPS). Los microservicios deben estar en `7171` (UserManagement) y `7210` (Construction).
+## 7. Troubleshooting Local
+1. **SSL:** Acepta el certificado de desarrollo de ASP.NET Core.
+2. **Puertos:** Gateway (`7149`), UserManagement (`7171`), Construction (`7210`).
+3. **Mayúsculas:** Respeta el PascalCase en las rutas de los servicios para evitar errores 400 del Gateway.

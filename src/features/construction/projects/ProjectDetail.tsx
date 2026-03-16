@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -10,17 +10,26 @@ import {
   Percent,
   TrendingUp,
   AlertCircle,
-  ShieldCheck,
-  Info,
   Plus,
   Trash2,
   FolderOpen,
   ChevronDown,
-  ChevronUp,
   ExternalLink,
   PackagePlus,
+  Edit3,
+  Users,
   FileText,
-  Edit3
+  Download,
+  Share2,
+  Crown,
+  CheckCircle2,
+  Shield,
+  Clock,
+  Printer,
+  MoreVertical,
+  UserMinus,
+  Settings2,
+  UserPlus
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { 
@@ -38,8 +47,21 @@ import {
   useUpdateItemMutation, 
   useDeleteItemMutation 
 } from '../../../hooks/queries/construction/useItems';
+import { 
+  useProjectMembersQuery,
+  useInviteMembersMutation,
+  useUpdateMembersMutation,
+  useTransferManagerMutation
+} from '../../../hooks/queries/construction/useProjectMembers';
+import {
+  useDownloadB1Mutation,
+  useDownloadB3Mutation
+} from '../../../hooks/queries/construction/useReports';
+import { useEmployees } from '../../../hooks/queries/useEmployees';
+import { useAuthStore } from '../../../store/authStore';
 import type { UpdateProjectParametersRequest } from '../../../types/construction/projectParameters';
 import type { BudgetItemDto } from '../../../types/construction/item';
+import type { ProjectMemberDto, MemberActionRequest } from '../../../types/construction/projectMember';
 import Swal from 'sweetalert2';
 import ImportTemplatesModal from '../catalogs/ImportTemplatesModal';
 import BudgetItemAnalysis from './BudgetItemAnalysis';
@@ -75,55 +97,55 @@ const ModuleItemsTable: React.FC<{
     });
   };
 
-  if (isLoading) return <div className="p-4 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-blue-400" /></div>;
+  if (isLoading) return <div className="p-4 flex justify-center text-left text-left"><Loader2 className="h-5 w-5 animate-spin text-blue-400" /></div>;
 
   return (
-    <div className="overflow-x-auto bg-gray-50/30 rounded-b-2xl border-t border-gray-100">
+    <div className="overflow-x-auto bg-gray-50/30 rounded-b-2xl border-t border-gray-100 text-left text-left">
       <table className="w-full text-left border-collapse">
         <thead>
-          <tr className="border-b border-gray-100">
-            <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Código</th>
-            <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Descripción del Ítem</th>
-            <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase text-center w-28">Cant.</th>
-            <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase">P. Unit (Bs.)</th>
-            <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase">Total (Bs.)</th>
-            <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase text-right">Acciones</th>
+          <tr className="border-b border-gray-100 text-left text-left">
+            <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left text-left">Código</th>
+            <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left text-left">Descripción del Ítem</th>
+            <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase text-center w-28 text-left text-left">Cant.</th>
+            <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase text-left text-left">P. Unit (Bs.)</th>
+            <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase text-left text-left">Total (Bs.)</th>
+            <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase text-right text-left text-left">Acciones</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100 bg-white/50 text-left">
+        <tbody className="divide-y divide-gray-100 bg-white/50 text-left text-left">
           {items?.length === 0 ? (
             <tr>
-              <td colSpan={6} className="px-6 py-8 text-center text-xs text-gray-400 italic">No hay actividades en este capítulo. Importa plantillas desde el catálogo maestro.</td>
+              <td colSpan={6} className="px-6 py-8 text-center text-xs text-gray-400 italic text-left text-left">No hay actividades en este capítulo. Importa plantillas desde el catálogo maestro.</td>
             </tr>
           ) : (
             items?.map((item) => (
-              <tr key={item.id} className="hover:bg-white transition-colors group text-left">
-                <td className="px-6 py-3 text-xs font-bold text-blue-600">{item.code}</td>
-                <td className="px-6 py-3">
-                  <p className="text-xs font-bold text-gray-800">{item.name}</p>
-                  <p className="text-[10px] text-gray-400 italic font-medium">Unidad: {item.unit}</p>
+              <tr key={item.id} className="hover:bg-white transition-colors group text-left text-left text-left text-left">
+                <td className="px-6 py-3 text-xs font-bold text-blue-600 text-left text-left">{item.code}</td>
+                <td className="px-6 py-3 text-left text-left text-left">
+                  <p className="text-xs font-bold text-gray-800 text-left text-left">{item.name}</p>
+                  <p className="text-[10px] text-gray-400 italic font-medium text-left text-left text-left">Unidad: {item.unit}</p>
                 </td>
-                <td className="px-6 py-3 text-left">
+                <td className="px-6 py-3 text-left text-left">
                   <input 
                     type="number"
                     defaultValue={item.quantity}
                     onBlur={(e) => handleUpdateQuantity(item, parseFloat(e.target.value) || 0)}
-                    className="w-20 mx-auto block px-2 py-1 rounded-lg border border-gray-200 text-xs font-bold text-center focus:ring-2 focus:ring-blue-100 outline-none"
+                    className="w-20 mx-auto block px-2 py-1 rounded-lg border border-gray-200 text-xs font-bold text-center focus:ring-2 focus:ring-blue-100 outline-none text-left text-left"
                   />
                 </td>
-                <td className="px-6 py-3 text-xs text-gray-600 font-medium">{item.unitPrice.toLocaleString()}</td>
-                <td className="px-6 py-3 text-xs font-black text-gray-900">{item.total.toLocaleString()}</td>
-                <td className="px-6 py-3 text-right">
-                  <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <td className="px-6 py-3 text-xs text-gray-600 font-medium text-left text-left">{item.unitPrice.toLocaleString()}</td>
+                <td className="px-6 py-3 text-xs font-black text-gray-900 text-left text-left">{item.total.toLocaleString()}</td>
+                <td className="px-6 py-3 text-right text-left text-left">
+                  <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity text-left text-left text-left">
                     <button 
                       onClick={() => onViewAnalysis(item.id, item.name)}
-                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" 
+                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all text-left text-left" 
                       title="Análisis de Precios Unitarios"
                     >
-                      <Calculator className="h-3.5 w-3.5" />
+                      <Calculator className="h-3.5 w-3.5 text-left text-left" />
                     </button>
-                    <button onClick={() => handleDelete(item.id, item.name)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Eliminar">
-                      <Trash2 className="h-3.5 w-3.5" />
+                    <button onClick={() => handleDelete(item.id, item.name)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all text-left text-left text-left" title="Eliminar">
+                      <Trash2 className="h-3.5 w-3.5 text-left text-left" />
                     </button>
                   </div>
                 </td>
@@ -140,28 +162,56 @@ const ModuleItemsTable: React.FC<{
 const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'budget' | 'settings'>('budget');
+  const { user: currentUser } = useAuthStore();
+  const [activeTab, setActiveTab] = useState<'budget' | 'settings' | 'team' | 'reports'>('budget');
   const [importModule, setImportModule] = useState<{id: string, name: string} | null>(null);
   const [analysisItem, setAnalysisItem] = useState<{id: string, name: string} | null>(null);
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+  const [activeMemberMenu, setActiveMemberMenu] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
+  // Queries
   const { data: projects, isLoading: isProjectsLoading } = useProjectsQuery();
   const currentProject = projects?.find(p => p.id === id);
 
   const { data: parameters, isLoading: isParamsLoading } = useProjectParametersQuery(id!);
-  const { mutate: updateParams, isPending: isUpdating } = useUpdateProjectParametersMutation(id!);
-
   const { data: modules, isLoading: isModulesLoading } = useModulesQuery(id!);
+  const { data: members, isLoading: isMembersLoading } = useProjectMembersQuery(id!);
+  const { data: allEmployees } = useEmployees();
+
+  // Mutations
+  const { mutate: updateParams, isPending: isUpdating } = useUpdateProjectParametersMutation(id!);
   const { mutate: createModule } = useCreateModuleMutation(id!);
   const { mutate: deleteModule } = useDeleteModuleMutation(id!);
+  const { mutate: inviteMembers } = useInviteMembersMutation(id!);
+  const { mutate: updateMembers } = useUpdateMembersMutation(id!);
+  const { mutate: transferManager } = useTransferManagerMutation(id!);
+  const { mutate: downloadB1, isPending: isDownloadingB1 } = useDownloadB1Mutation();
+  const { mutate: downloadB3, isPending: isDownloadingB3 } = useDownloadB3Mutation();
 
   const { register, handleSubmit, reset, formState: { isDirty } } = useForm<UpdateProjectParametersRequest>();
+
+  // Permisos del usuario actual sobre esta obra
+  const myMemberInfo = members?.find(m => m.userId === currentUser?.id);
+  const canModifyBudget = myMemberInfo?.isEncargado || myMemberInfo?.canEdit || currentUser?.role === 'Empresa';
+  const canManageTeam = myMemberInfo?.isEncargado || myMemberInfo?.canShare || currentUser?.role === 'Empresa';
 
   useEffect(() => {
     if (parameters) {
       reset(parameters);
     }
   }, [parameters, reset]);
+
+  // Cerrar menú al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setActiveMemberMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const onSubmitParams = (data: UpdateProjectParametersRequest) => {
     updateParams(data);
@@ -175,14 +225,14 @@ const ProjectDetail: React.FC = () => {
     const { value: formValues } = await Swal.fire({
       title: 'Añadir Nuevo Módulo',
       html: `
-        <div class="space-y-4 pt-4 text-left">
-          <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre del Capítulo</label>
-            <input id="swal-name" class="w-full px-4 py-2 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-100" placeholder="Ej. Obras Preliminares">
+        <div class="space-y-4 pt-4 text-left text-left">
+          <div class="text-left">
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1 text-left">Nombre del Capítulo</label>
+            <input id="swal-name" class="w-full px-4 py-2 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-100 text-left" placeholder="Ej. Obras Preliminares">
           </div>
-          <div class="mt-4 text-left">
-            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Descripción corta</label>
-            <input id="swal-desc" class="w-full px-4 py-2 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-100" placeholder="Opcional...">
+          <div class="mt-4 text-left text-left">
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1 text-left text-left">Descripción corta</label>
+            <input id="swal-desc" class="w-full px-4 py-2 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-100 text-left" placeholder="Opcional...">
           </div>
         </div>
       `,
@@ -228,271 +278,297 @@ const ProjectDetail: React.FC = () => {
     });
   };
 
+  const handleInvite = async () => {
+    if (!canManageTeam) return;
+
+    // Filtrar empleados que no están ya en la obra
+    const availableEmployees = allEmployees?.filter(e => !members?.some(m => m.userId === e.id)) || [];
+
+    const { value: formValues } = await Swal.fire({
+      title: 'Asignar Personal a la Obra',
+      width: '600px',
+      html: `
+        <div class="space-y-6 pt-4 text-left">
+          <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100 mb-4 text-left">
+            <p class="text-xs text-blue-700 font-medium leading-relaxed">Marca los empleados que deseas incorporar al proyecto. Se les asignará el mismo rol y permisos de forma masiva.</p>
+          </div>
+
+          <div class="text-left">
+            <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">1. Seleccionar Personal (${availableEmployees.length})</label>
+            <div id="employees-list" class="max-h-60 overflow-y-auto space-y-2 pr-2 custom-scrollbar text-left">
+              ${availableEmployees.map(e => `
+                <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 cursor-pointer transition-all group">
+                  <input type="checkbox" name="emp-checkbox" value="${e.id}" data-name="${e.nombreCompleto}" class="h-5 w-5 rounded-lg text-blue-600 border-gray-300 focus:ring-blue-500">
+                  <div class="text-left">
+                    <p class="text-sm font-bold text-gray-800 group-hover:text-blue-600 transition-colors">${e.nombreCompleto}</p>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">${e.cargo || 'Personal General'}</p>
+                  </div>
+                </label>
+              `).join('')}
+              ${availableEmployees.length === 0 ? '<p class="text-center py-8 text-gray-400 italic text-sm text-left">No hay más empleados disponibles para invitar.</p>' : ''}
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 text-left text-left">
+            <div class="text-left">
+              <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">2. Definir Rol</label>
+              <select id="invite-role" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-100 bg-white font-bold text-sm text-left">
+                <option value="Admin">Administrador</option>
+                <option value="Resident">Residente de Obra</option>
+                <option value="Supervisor">Supervisor</option>
+                <option value="Viewer" selected>Lector (Solo Vista)</option>
+              </select>
+            </div>
+            <div class="text-left text-left">
+              <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 text-left">3. Permisos</label>
+              <div class="flex flex-col gap-2 text-left">
+                <label class="flex items-center gap-2 text-sm cursor-pointer font-medium text-gray-600 text-left">
+                  <input type="checkbox" id="invite-edit" class="h-4 w-4 rounded text-blue-600"> <span>Permitir Edición</span>
+                </label>
+                <label class="flex items-center gap-2 text-sm cursor-pointer font-medium text-gray-600 text-left text-left">
+                  <input type="checkbox" id="invite-share" checked class="h-4 w-4 rounded text-blue-600"> <span>Permitir Compartir</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Incorporar a Obra',
+      confirmButtonColor: '#2563eb',
+      customClass: { popup: 'rounded-[32px]' },
+      preConfirm: () => {
+        const checkboxes = document.querySelectorAll('input[name="emp-checkbox"]:checked');
+        const role = (document.getElementById('invite-role') as HTMLSelectElement).value;
+        const canEdit = (document.getElementById('invite-edit') as HTMLInputElement).checked;
+        const canShare = (document.getElementById('invite-share') as HTMLInputElement).checked;
+
+        if (checkboxes.length === 0) {
+          Swal.showValidationMessage('Selecciona al menos un empleado');
+          return false;
+        }
+
+        const membersToInvite: MemberActionRequest[] = Array.from(checkboxes).map((cb: any) => ({
+          externalUserId: cb.value,
+          fullName: cb.getAttribute('data-name'),
+          canView: true,
+          canEdit,
+          canShare,
+          role
+        }));
+
+        return membersToInvite;
+      }
+    });
+
+    if (formValues) {
+      inviteMembers({
+        projectId: id!,
+        members: formValues
+      });
+    }
+  };
+
+  const handleUpdateMember = async (member: ProjectMemberDto) => {
+    setActiveMemberMenu(null); // Cerrar el menú antes de abrir el modal
+    
+    if (!canManageTeam || member.isEncargado) return;
+
+    const { value: formValues } = await Swal.fire({
+      title: 'Ajustar Privilegios',
+      text: `Colaborador: ${member.fullName}`,
+      html: `
+        <div class="space-y-4 mt-4 text-left p-6 bg-gray-50 rounded-3xl text-left text-left">
+          <div class="text-left text-left text-left">
+            <label class="block text-xs font-black text-gray-400 uppercase mb-2 text-left">Rol Asignado</label>
+            <select id="edit-role" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none bg-white font-bold text-sm text-left text-left">
+              <option value="Admin" ${member.role === 'Admin' ? 'selected' : ''}>Administrador</option>
+              <option value="Resident" ${member.role === 'Resident' ? 'selected' : ''}>Residente</option>
+              <option value="Supervisor" ${member.role === 'Supervisor' ? 'selected' : ''}>Supervisor</option>
+              <option value="Viewer" ${member.role === 'Viewer' ? 'selected' : ''}>Lector</option>
+            </select>
+          </div>
+          <div class="space-y-3 text-left text-left">
+            <label class="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white transition-all text-left text-left">
+              <input type="checkbox" id="edit-can-edit" ${member.canEdit ? 'checked' : ''} class="h-5 w-5 rounded text-blue-600 text-left">
+              <span class="text-sm font-bold text-gray-700 text-left">Habilitar Edición de Presupuesto</span>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white transition-all text-left text-left">
+              <input type="checkbox" id="edit-can-share" ${member.canShare ? 'checked' : ''} class="h-5 w-5 rounded text-blue-600 text-left">
+              <span class="text-sm font-bold text-gray-700 text-left">Habilitar Invitación de otros</span>
+            </label>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Guardar Cambios',
+      confirmButtonColor: '#2563eb',
+      customClass: { popup: 'rounded-[32px]' },
+      preConfirm: () => ({
+        externalUserId: member.userId,
+        canView: true,
+        canEdit: (document.getElementById('edit-can-edit') as HTMLInputElement).checked,
+        canShare: (document.getElementById('edit-can-share') as HTMLInputElement).checked,
+        role: (document.getElementById('edit-role') as HTMLSelectElement).value
+      })
+    });
+
+    if (formValues) {
+      updateMembers({ 
+        projectId: id!,
+        members: [formValues] 
+      });
+    }
+  };
+
+  const handleTransfer = (member: ProjectMemberDto) => {
+    setActiveMemberMenu(null);
+    if (currentUser?.role !== 'Empresa' && !myMemberInfo?.isEncargado) return;
+
+    Swal.fire({
+      title: '¿Transferir Liderazgo?',
+      text: `Vas a ceder el control total de la obra a ${member.fullName}. Esta acción es irreversible.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#f59e0b',
+      confirmButtonText: 'Sí, transferir cargo',
+      customClass: { popup: 'rounded-2xl' }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        transferManager(member.userId);
+      }
+    });
+  };
+
   if (isProjectsLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 text-left">
-        <Loader2 className="h-10 w-10 text-blue-600 animate-spin" />
-        <p className="text-gray-500 font-medium">Cargando proyecto...</p>
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 text-left text-left text-left">
+        <Loader2 className="h-10 w-10 text-blue-600 animate-spin text-left text-left" />
+        <p className="text-gray-500 font-medium text-left">Cargando proyecto...</p>
       </div>
     );
   }
 
   if (!currentProject) {
     return (
-      <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center text-left">
-        <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-gray-900">Proyecto no encontrado</h2>
-        <button onClick={() => navigate('/construction/projects')} className="mt-4 text-blue-600 font-bold hover:underline">Volver</button>
+      <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center text-left text-left text-left text-left">
+        <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4 text-left text-left" />
+        <h2 className="text-xl font-bold text-gray-900 text-left text-left">Proyecto no encontrado</h2>
+        <button onClick={() => navigate('/construction/projects')} className="mt-4 text-blue-600 font-bold hover:underline text-left">Volver</button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 text-left">
-      {/* Header */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-left">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
-          <div className="flex items-center gap-4 text-left">
-            <button onClick={() => navigate('/construction/projects')} className="p-2.5 rounded-xl hover:bg-gray-50 border border-gray-100 transition-all">
-              <ArrowLeft className="h-5 w-5 text-gray-500" />
+    <div className="space-y-6 text-left animate-in fade-in duration-500 text-left text-left text-left text-left">
+      {/* Header Centralizado */}
+      <div className="bg-white/95 backdrop-blur-md p-6 rounded-3xl shadow-lg border border-white/10 text-left text-left text-left">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 text-left text-left">
+          <div className="flex items-center gap-4 text-left text-left text-left">
+            <button onClick={() => navigate('/construction/projects')} className="p-3 rounded-2xl hover:bg-gray-50 border border-gray-100 transition-all text-gray-400 hover:text-blue-600 text-left text-left text-left">
+              <ArrowLeft className="h-5 w-5 text-left text-left" />
             </button>
-            <div className="text-left">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded">{currentProject.code}</span>
-                <h2 className="text-xl font-bold text-gray-900">{currentProject.name}</h2>
+            <div className="text-left text-left text-left text-left">
+              <div className="flex items-center gap-2 mb-1 text-left text-left text-left">
+                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 text-left text-left text-left">{currentProject.code}</span>
+                <h2 className="text-2xl font-black text-gray-900 text-left text-left text-left">{currentProject.name}</h2>
               </div>
-              <p className="text-sm text-gray-500">Cliente: {currentProject.client} • Ubicación: {currentProject.location}</p>
+              <p className="text-sm text-gray-500 font-medium text-left text-left text-left">Cliente: <span className="text-gray-800 text-left text-left text-left">{currentProject.client}</span> • <span className="italic text-left text-left text-left">{currentProject.location}</span></p>
             </div>
           </div>
           
-          <div className="flex bg-gray-100 p-1 rounded-xl w-fit self-end md:self-center text-left">
-            <button 
-              onClick={() => setActiveTab('budget')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'budget' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <Layout className="h-4 w-4" /> Presupuesto
-            </button>
-            <button 
-              onClick={() => setActiveTab('settings')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'settings' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <Settings className="h-4 w-4" /> Parámetros
-            </button>
+          <div className="flex bg-gray-100/80 p-1.5 rounded-2xl w-fit self-end md:self-center backdrop-blur-sm text-left text-left">
+            {[
+              { id: 'budget', label: 'Presupuesto', icon: Layout },
+              { id: 'team', label: 'Equipo', icon: Users },
+              { id: 'reports', label: 'Reportes', icon: FileText },
+              { id: 'settings', label: 'Configuración', icon: Settings }
+            ].map((tab) => (
+              <button 
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === tab.id ? 'bg-white text-blue-600 shadow-md ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700'} text-left text-left text-left`}
+              >
+                <tab.icon className={`h-4 w-4 ${activeTab === tab.id ? 'text-blue-600' : 'text-gray-400'} text-left text-left`} /> {tab.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {activeTab === 'settings' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300 text-left">
-          <div className="lg:col-span-8 text-left">
-            <form onSubmit={handleSubmit(onSubmitParams)} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden text-left">
-              <div className="px-8 py-6 border-b border-gray-50 text-left">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <Calculator className="h-5 w-5 text-blue-600" /> Parámetros impositivos y de Ley
-                </h3>
-                <p className="text-sm text-gray-500 mt-1">Configura las cargas sociales e impuestos específicos para {currentProject.name}.</p>
-              </div>
-
-              {isParamsLoading ? (
-                <div className="p-20 flex flex-col items-center justify-center space-y-3 text-left">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-200" />
-                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest text-left">Recuperando parámetros...</p>
-                </div>
-              ) : (
-                <div className="p-8 space-y-8 text-left">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
-                    <div className="space-y-2 text-left">
-                      <label className="text-sm font-bold text-gray-700">Beneficios Sociales (%)</label>
-                      <div className="relative text-left">
-                        <Percent className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <input 
-                          {...register('socialBenefitsPercentage', { valueAsNumber: true })}
-                          type="number" step="0.01"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none font-bold text-gray-700"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 text-left">
-                      <label className="text-sm font-bold text-gray-700">IVA sobre Mano de Obra (%)</label>
-                      <div className="relative text-left">
-                        <Percent className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <input 
-                          {...register('laborIVAPercentage', { valueAsNumber: true })}
-                          type="number" step="0.01"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none font-bold text-gray-700"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 text-left">
-                      <label className="text-sm font-bold text-gray-700">Herramientas Menores (%)</label>
-                      <div className="relative text-left">
-                        <Percent className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <input 
-                          {...register('minorToolsPercentage', { valueAsNumber: true })}
-                          type="number" step="0.01"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none font-bold text-gray-700"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 text-left">
-                      <label className="text-sm font-bold text-gray-700">Gastos Generales (%)</label>
-                      <div className="relative text-left">
-                        <Percent className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <input 
-                          {...register('generalExpensesPercentage', { valueAsNumber: true })}
-                          type="number" step="0.01"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none font-bold text-gray-700"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 text-left">
-                      <label className="text-sm font-bold text-gray-700">Utilidad (%)</label>
-                      <div className="relative text-left">
-                        <TrendingUp className="absolute left-3 top-3 h-4 w-4 text-green-500" />
-                        <input 
-                          {...register('utilityPercentage', { valueAsNumber: true })}
-                          type="number" step="0.01"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none font-bold text-gray-700"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 text-left">
-                      <label className="text-sm font-bold text-gray-700">IT (Impuesto Transacciones %)</label>
-                      <div className="relative text-left">
-                        <Percent className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <input 
-                          {...register('itPercentage', { valueAsNumber: true })}
-                          type="number" step="0.01"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none font-bold text-gray-700"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                    <label className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 bg-gray-50/50 cursor-pointer text-left">
-                      <input {...register('isLaborIVAActive')} type="checkbox" className="h-4 w-4 text-blue-600 rounded" />
-                      <span className="text-sm font-medium text-gray-700">Activar IVA sobre Mano de Obra</span>
-                    </label>
-                    <label className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 bg-gray-50/50 cursor-pointer text-left">
-                      <input {...register('isITActive')} type="checkbox" className="h-4 w-4 text-blue-600 rounded" />
-                      <span className="text-sm font-medium text-gray-700">Activar Impuesto a las Transacciones (IT)</span>
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              <div className="px-8 py-6 bg-gray-50/50 border-t border-gray-50 flex justify-end text-left">
-                <button 
-                  type="submit"
-                  disabled={!isDirty || isUpdating}
-                  className="flex items-center gap-2 px-8 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-100 disabled:opacity-50 transition-all"
-                >
-                  {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Guardar Cambios
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <div className="lg:col-span-4 space-y-6 text-left">
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-left">
-              <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Resumen Impositivo</h4>
-              <div className="space-y-4 text-left">
-                <div className="flex items-center justify-between text-left">
-                  <span className="text-sm text-gray-600 text-left">Herramientas Menores</span>
-                  <span className="text-sm font-bold text-gray-900">{parameters?.minorToolsPercentage}%</span>
-                </div>
-                <div className="flex items-center justify-between text-left">
-                  <span className="text-sm text-gray-600 text-left">Gastos Generales</span>
-                  <span className="text-sm font-bold text-gray-900">{parameters?.generalExpensesPercentage}%</span>
-                </div>
-                <div className="flex items-center justify-between text-left">
-                  <span className="text-sm text-gray-600 text-left">Utilidad Bruta</span>
-                  <span className="text-sm font-bold text-green-600 text-left">{parameters?.utilityPercentage}%</span>
-                </div>
-                <hr className="border-gray-50" />
-                <div className="flex items-center gap-2 text-xs text-green-600 font-bold bg-green-50 p-3 rounded-xl border border-green-100 text-left">
-                  <ShieldCheck className="h-4 w-4 text-left" /> Parámetros del Sistema
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* 1. PRESUPUESTO */}
       {activeTab === 'budget' && (
-        <div className="space-y-6 animate-in fade-in duration-300 text-left">
-          <div className="flex items-center justify-between text-left">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 text-left">
-              <FolderOpen className="h-5 w-5 text-blue-600" /> Estructura de Capítulos
+        <div className="space-y-6 animate-in fade-in duration-300 text-left text-left text-left">
+          <div className="flex items-center justify-between text-left text-left">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2 text-left text-left">
+              <FolderOpen className="h-5 w-5 text-blue-400 text-left text-left" /> Estructura de Capítulos
             </h3>
-            <button 
-              onClick={handleAddModule}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-100"
-            >
-              <Plus className="h-4 w-4" /> Añadir Capítulo
-            </button>
+            {canModifyBudget && (
+              <button 
+                onClick={handleAddModule}
+                className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-900/20 text-left text-left text-left"
+              >
+                <Plus className="h-4 w-4 text-left text-left" /> Añadir Capítulo
+              </button>
+            )}
           </div>
 
           {isModulesLoading ? (
-            <div className="py-20 flex justify-center text-left"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+            <div className="py-20 flex justify-center text-left text-left text-left"><Loader2 className="h-10 w-10 animate-spin text-blue-600 text-left text-left text-left" /></div>
           ) : modules?.length === 0 ? (
-            <div className="bg-white p-20 rounded-3xl border border-dashed border-gray-200 text-center text-gray-400 text-left">
-              <Layout className="h-12 w-12 mx-auto mb-4 opacity-10 text-center" />
-              <p className="text-sm max-w-xs mx-auto italic text-center text-left">El presupuesto está vacío. Crea tu primer capítulo para comenzar a añadir actividades.</p>
+            <div className="bg-white/10 backdrop-blur-md p-20 rounded-[40px] border-2 border-dashed border-white/10 text-center text-gray-400 text-left text-left text-left">
+              <div className="bg-white/5 p-6 rounded-full w-fit mx-auto mb-4 text-left text-left">
+                <Layout className="h-12 w-12 opacity-10 text-left text-left text-left" />
+              </div>
+              <p className="text-sm max-w-xs mx-auto italic text-left text-left text-left">El presupuesto está vacío. Comienza creando un capítulo.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 text-left">
-              {modules?.map((mod) => (
-                <div key={mod.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group text-left">
+            <div className="grid grid-cols-1 gap-4 text-left text-left text-left">
+              {modules?.sort((a,b) => a.order - b.order).map((mod) => (
+                <div key={mod.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden group text-left text-left text-left text-left">
                   <div 
                     onClick={() => toggleModule(mod.id)}
-                    className="p-5 flex items-center justify-between hover:bg-gray-50 transition-colors cursor-pointer text-left"
+                    className={`p-6 flex items-center justify-between transition-all cursor-pointer ${expandedModules[mod.id] ? 'bg-blue-50/30' : 'hover:bg-gray-50'} text-left text-left text-left`}
                   >
-                    <div className="flex items-center gap-4 flex-1 text-left">
-                      <div className="h-10 w-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 font-bold">
+                    <div className="flex items-center gap-5 flex-1 text-left text-left text-left text-left">
+                      <div className={`h-12 w-12 rounded-2xl flex items-center justify-center font-black text-lg transition-all ${expandedModules[mod.id] ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-gray-100 text-gray-400'} text-left text-left text-left text-left`}>
                         {mod.order + 1}
                       </div>
-                      <div className="text-left text-left">
-                        <h4 className="font-bold text-gray-900 leading-none mb-1">{mod.name}</h4>
-                        <p className="text-xs text-gray-500 truncate max-w-md">{mod.description || 'Sin descripción'}</p>
+                      <div className="text-left text-left text-left text-left text-left text-left">
+                        <h4 className="font-bold text-gray-900 text-lg leading-tight mb-1 text-left text-left text-left text-left">{mod.name}</h4>
+                        <p className="text-xs text-gray-500 font-medium text-left text-left text-left text-left">{mod.description || 'Sin descripción detallada'}</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-6 text-left">
-                      <div className="text-right mr-4 text-left">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase leading-none">Subtotal Módulo</p>
-                        <p className="text-sm font-black text-gray-900 mt-1">Bs. {mod.totalAmount.toLocaleString()}</p>
+                    <div className="flex items-center gap-8 text-left text-left text-left text-left">
+                      <div className="text-right text-left text-left text-left text-left">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none text-left text-left text-left text-left">Subtotal Capítulo</p>
+                        <p className="text-xl font-black text-gray-900 mt-1.5 text-left text-left text-left text-left">Bs. {mod.totalAmount.toLocaleString()}</p>
                       </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity text-left">
-                        <button 
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg flex items-center gap-1 text-xs font-bold"
-                          title="Importar Actividades"
-                          onClick={(e) => { e.stopPropagation(); setImportModule({id: mod.id, name: mod.name}); }}
-                        >
-                          <PackagePlus className="h-4 w-4" />
-                          Importar
-                        </button>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleDeleteModule(mod.id, mod.name); }}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                        <div className="ml-2 p-1 bg-gray-100 rounded text-gray-400 text-left">
-                          {expandedModules[mod.id] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity text-left text-left text-left text-left">
+                        {canModifyBudget && (
+                          <>
+                            <button 
+                              className="p-2.5 bg-blue-600 text-white rounded-xl shadow-md shadow-blue-50 hover:bg-blue-700 transition-all flex items-center gap-2 text-xs font-bold text-left text-left text-left text-left"
+                              onClick={(e) => { e.stopPropagation(); setImportModule({id: mod.id, name: mod.name}); }}
+                            >
+                              <PackagePlus className="h-4 w-4 text-left text-left text-left" /> Importar
+                            </button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleDeleteModule(mod.id, mod.name); }}
+                              className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all text-left text-left text-left text-left"
+                            >
+                              <Trash2 className="h-4 w-4 text-left text-left text-left" />
+                            </button>
+                          </>
+                        )}
+                        <div className={`ml-2 p-2 rounded-xl transition-all ${expandedModules[mod.id] ? 'bg-blue-100 text-blue-600 rotate-180' : 'bg-gray-100 text-gray-400'} text-left text-left text-left text-left`}>
+                          <ChevronDown className="h-4 w-4 text-left text-left text-left text-left" />
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Contenido Expandido: Tabla de Ítems */}
                   {expandedModules[mod.id] && (
                     <ModuleItemsTable 
                       moduleId={mod.id} 
@@ -507,7 +583,186 @@ const ProjectDetail: React.FC = () => {
         </div>
       )}
 
-      {/* Modal de Importación Masiva */}
+      {/* 2. EQUIPO */}
+      {activeTab === 'team' && (
+        <div className="space-y-6 animate-in fade-in duration-300 text-left text-left text-left">
+          <div className="flex items-center justify-between text-left text-left text-left">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2 text-left text-left text-left">
+              <Users className="h-5 w-5 text-blue-400 text-left text-left text-left text-left text-left" /> Gestión de Colaboradores
+            </h3>
+            {canManageTeam && (
+              <button 
+                onClick={handleInvite}
+                className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg text-left text-left text-left"
+              >
+                <UserPlus className="h-4 w-4 text-left text-left text-left" /> Invitar Personal
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left text-left text-left">
+            {isMembersLoading ? (
+              <div className="col-span-full py-10 flex justify-center text-left text-left text-left"><Loader2 className="animate-spin text-blue-600 text-left text-left text-left" /></div>
+            ) : members?.map((member) => (
+              <div key={member.userId} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between group text-left text-left text-left relative">
+                <div className="flex items-center gap-4 text-left text-left text-left text-left text-left">
+                  <div className={`h-12 w-12 rounded-2xl flex items-center justify-center font-bold text-sm ${member.isEncargado ? 'bg-amber-100 text-amber-700 border-2 border-amber-200 shadow-lg shadow-amber-50' : 'bg-blue-50 text-blue-600'} text-left text-left text-left`}>
+                    {member.isEncargado ? <Crown className="h-6 w-6 text-left text-left text-left" /> : (member.fullName?.[0] || 'C')}
+                  </div>
+                  <div className="text-left text-left text-left text-left text-left">
+                    <div className="flex items-center gap-2 text-left text-left text-left text-left text-left">
+                      <h4 className="font-bold text-gray-900 text-left text-left text-left">{member.fullName || 'Colaborador Invitado'}</h4>
+                      {member.isEncargado && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black rounded-lg uppercase tracking-tighter text-left text-left text-left">Encargado</span>}
+                    </div>
+                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest text-left text-left">{member.role}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-left text-left text-left text-left">
+                  <div className="flex items-center gap-1.5 mr-4 text-left text-left text-left text-left text-left">
+                    <Shield className={`h-3.5 w-3.5 ${member.canEdit ? 'text-green-500' : 'text-gray-300'} text-left text-left text-left`} />
+                    <Share2 className={`h-3.5 w-3.5 ${member.canShare ? 'text-blue-500' : 'text-gray-300'} text-left text-left text-left`} />
+                  </div>
+                  
+                  {canManageTeam && !member.isEncargado && (
+                    <div className="relative text-left text-left text-left" ref={activeMemberMenu === member.userId ? menuRef : null}>
+                      <button 
+                        onClick={() => setActiveMemberMenu(activeMemberMenu === member.userId ? null : member.userId)}
+                        className={`p-2 rounded-xl transition-all ${activeMemberMenu === member.userId ? 'bg-gray-100 text-gray-900' : 'text-gray-300 hover:text-gray-900'}`}
+                      >
+                        <MoreVertical className="h-4 w-4 text-left text-left text-left text-left" />
+                      </button>
+                      
+                      {activeMemberMenu === member.userId && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-150 text-left text-left text-left text-left">
+                          <button onClick={() => handleUpdateMember(member)} className="w-full flex items-center gap-3 px-4 py-2 text-xs font-bold text-gray-600 hover:bg-blue-50 hover:text-blue-600 text-left text-left text-left">
+                            <Settings2 className="h-3.5 w-3.5 text-left text-left text-left" /> Ajustar Privilegios
+                          </button>
+                          {(currentUser?.role === 'Empresa' || myMemberInfo?.isEncargado) && (
+                            <button onClick={() => handleTransfer(member)} className="w-full flex items-center gap-3 px-4 py-2 text-xs font-bold text-amber-600 hover:bg-amber-50 text-left text-left text-left text-left">
+                              <Crown className="h-3.5 w-3.5 text-left text-left text-left text-left" /> Hacer Encargado
+                            </button>
+                          )}
+                          <hr className="my-1 border-gray-50 text-left text-left text-left" />
+                          <button className="w-full flex items-center gap-3 px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 text-left text-left text-left">
+                            <UserMinus className="h-3.5 w-3.5 text-left text-left text-left text-left" /> Quitar de Obra
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 3. REPORTES */}
+      {activeTab === 'reports' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in duration-300 text-left text-left text-left">
+          <div className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm hover:shadow-xl transition-all group flex flex-col justify-between h-80 text-left text-left text-left">
+            <div className="text-left text-left text-left text-left">
+              <div className="h-14 w-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6 group-hover:scale-110 transition-transform text-left text-left text-left">
+                <FileText className="h-8 w-8 text-left text-left text-left" />
+              </div>
+              <h4 className="text-xl font-black text-gray-900 mb-2 text-left text-left text-left">Formulario B-1</h4>
+              <p className="text-sm text-gray-500 leading-relaxed font-medium text-left text-left text-left">Presupuesto por Ítems y General. Documento oficial que resume todos los capítulos y actividades de la obra.</p>
+            </div>
+            <button 
+              onClick={() => downloadB1({ id: id!, name: currentProject.name })}
+              disabled={isDownloadingB1}
+              className="w-full mt-8 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-3 disabled:opacity-50 text-left text-left text-left"
+            >
+              {isDownloadingB1 ? <Loader2 className="h-5 w-5 animate-spin text-left text-left text-left" /> : <Download className="h-5 w-5 text-left text-left text-left" />}
+              {isDownloadingB1 ? 'Generando...' : 'Descargar PDF B-1'}
+            </button>
+          </div>
+
+          <div className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm hover:shadow-xl transition-all group flex flex-col justify-between h-80 text-left text-left text-left text-left">
+            <div className="text-left text-left text-left text-left text-left">
+              <div className="h-14 w-14 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 mb-6 group-hover:scale-110 transition-transform text-left text-left text-left text-left">
+                <Printer className="h-8 w-8 text-left text-left text-left" />
+              </div>
+              <h4 className="text-xl font-black text-gray-900 mb-2 text-left text-left text-left">Formulario B-3</h4>
+              <p className="text-sm text-gray-500 leading-relaxed font-medium text-left text-left text-left">Precios Unitarios Elementales. Listado consolidado de todos los insumos únicos del proyecto.</p>
+            </div>
+            <button 
+              onClick={() => downloadB3({ id: id!, name: currentProject.name })}
+              disabled={isDownloadingB3}
+              className="w-full mt-8 py-4 bg-green-600 text-white font-bold rounded-2xl hover:bg-green-700 transition-all shadow-lg shadow-green-100 flex items-center justify-center gap-3 disabled:opacity-50 text-left text-left text-left"
+            >
+              {isDownloadingB3 ? <Loader2 className="h-5 w-5 animate-spin text-left text-left text-left" /> : <Download className="h-5 w-5 text-left text-left text-left" />}
+              {isDownloadingB3 ? 'Generando...' : 'Descargar PDF B-3'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 4. CONFIGURACIÓN */}
+      {activeTab === 'settings' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300 text-left text-left text-left text-left">
+          <div className="lg:col-span-8 text-left text-left text-left">
+            <form onSubmit={handleSubmit(onSubmitParams)} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden text-left text-left text-left">
+              <div className="px-8 py-6 border-b border-gray-50 text-left text-left text-left">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 text-left text-left text-left">
+                  <Calculator className="h-5 w-5 text-blue-600 text-left text-left text-left" /> Parámetros impositivos y de Ley
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 text-left text-left text-left">Configura las cargas sociales e impuestos específicos para {currentProject.name}.</p>
+              </div>
+
+              {isParamsLoading ? (
+                <div className="p-20 flex flex-col items-center justify-center space-y-3 text-left text-left text-left text-left">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-200 text-left text-left text-left text-left" />
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest text-left text-left text-left text-left">Recuperando parámetros...</p>
+                </div>
+              ) : (
+                <div className="p-8 space-y-8 text-left text-left text-left">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left text-left text-left text-left">
+                    <div className="space-y-2 text-left text-left text-left text-left">
+                      <label className="text-sm font-bold text-gray-700 text-left text-left text-left">Beneficios Sociales (%)</label>
+                      <div className="relative text-left text-left text-left text-left">
+                        <Percent className="absolute left-3 top-3 h-4 w-4 text-gray-400 text-left text-left text-left" />
+                        <input {...register('socialBenefitsPercentage', { valueAsNumber: true })} type="number" step="0.01" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none font-bold text-gray-700 focus:ring-2 focus:ring-blue-100 text-left text-left text-left" />
+                      </div>
+                    </div>
+                    <div className="space-y-2 text-left text-left text-left text-left text-left">
+                      <label className="text-sm font-bold text-gray-700 text-left text-left text-left">IVA (Mano de Obra) (%)</label>
+                      <div className="relative text-left text-left text-left text-left text-left">
+                        <Percent className="absolute left-3 top-3 h-4 w-4 text-gray-400 text-left text-left text-left" />
+                        <input {...register('laborIVAPercentage', { valueAsNumber: true })} type="number" step="0.01" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none font-bold text-gray-700 focus:ring-2 focus:ring-blue-100 text-left text-left text-left" />
+                      </div>
+                    </div>
+                    <div className="space-y-2 text-left text-left text-left text-left text-left text-left">
+                      <label className="text-sm font-bold text-gray-700 text-left text-left text-left">Utilidad (%)</label>
+                      <div className="relative text-left text-left text-left text-left text-left text-left text-left">
+                        <TrendingUp className="absolute left-3 top-3 h-4 w-4 text-green-500 text-left text-left text-left text-left" />
+                        <input {...register('utilityPercentage', { valueAsNumber: true })} type="number" step="0.01" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none font-bold text-gray-700 focus:ring-2 focus:ring-blue-100 text-left text-left text-left" />
+                      </div>
+                    </div>
+                    <div className="space-y-2 text-left text-left text-left text-left text-left text-left">
+                      <label className="text-sm font-bold text-gray-700 text-left text-left text-left">IT (%)</label>
+                      <div className="relative text-left text-left text-left text-left text-left text-left text-left">
+                        <Percent className="absolute left-3 top-3 h-4 w-4 text-gray-400 text-left text-left text-left" />
+                        <input {...register('itPercentage', { valueAsNumber: true })} type="number" step="0.01" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none font-bold text-gray-700 focus:ring-2 focus:ring-blue-100 text-left text-left text-left" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="px-8 py-6 bg-gray-50/50 border-t border-gray-50 flex justify-end text-left text-left text-left">
+                <button type="submit" disabled={!isDirty || isUpdating} className="flex items-center gap-2 px-8 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg disabled:opacity-50 text-left text-left text-left">
+                  {isUpdating ? <Loader2 className="h-4 w-4 animate-spin text-left text-left text-left" /> : <Save className="h-4 w-4 text-left text-left text-left" />}
+                  Guardar Configuración
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modales */}
       {importModule && (
         <ImportTemplatesModal 
           projectId={id!}
@@ -517,7 +772,6 @@ const ProjectDetail: React.FC = () => {
         />
       )}
 
-      {/* Modal de Análisis APU */}
       {analysisItem && (
         <BudgetItemAnalysis 
           itemId={analysisItem.id}
